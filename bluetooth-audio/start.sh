@@ -4,6 +4,14 @@ if [[ -z "$BLUETOOTH_DEVICE_NAME" ]]; then
   BLUETOOTH_DEVICE_NAME=$(printf "balenaSound %s" $(hostname | cut -c -4))
 fi
 
+if [[ -z "$BLUETOOTH_PIN_CODE" ]]; then
+  BLUETOOTH_PIN_CODE=0000
+fi
+
+cat <<EOF > /usr/src/bluetooth.cfg
+* $BLUETOOTH_PIN_CODE
+EOF
+
 # Set the system volume here
 SYSTEM_OUTPUT_VOLUME="${SYSTEM_OUTPUT_VOLUME:-100}"
 echo $SYSTEM_OUTPUT_VOLUME > /usr/src/system_output_volume
@@ -26,7 +34,9 @@ sleep 2
 # can be confusing and it also hides those commands from the logs as well.
 printf "discoverable on\npairable on\nexit\n" | bluetoothctl > /dev/null
 
-/usr/src/bluetooth-agent &
+hciconfig hci0 sspmode 0
+
+bt-agent -p /usr/src/bluetooth.cfg &
 
 sleep 2
 rm -rf /var/run/bluealsa/
